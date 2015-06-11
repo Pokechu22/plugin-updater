@@ -1,0 +1,14 @@
+name: PluginUpdater
+main: pokechu22.plugins.pluginupdater.PluginUpdater
+version: 0.0.1-SNAPSHOT
+description: Allows manual updating of a plugin currently running on a server, without restarting it.
+author: Pokechu22
+
+commands: 
+  updatePlugin: 
+    description: Updates a plugin.
+    usage: |
+          /<command> <plugin> -- updates <plugin>.
+          /<command> * -- updates all configured plugins.
+          /<command> all -- see above
+    aliases: [update, update-plugin]
