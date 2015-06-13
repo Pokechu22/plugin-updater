@@ -12,3 +12,9 @@ commands:
           /<command> * -- updates all configured plugins.
           /<command> all -- see above
     aliases: [update, update-plugin]
+
+permissions: 
+  pluginupdater.update: 
+    description: 
+      Allows a player to update plugins.
+    default: op
