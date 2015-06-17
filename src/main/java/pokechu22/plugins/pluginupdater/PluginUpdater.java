@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.command.Command;
@@ -17,13 +18,58 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.google.common.io.Files;
 
 public class PluginUpdater extends JavaPlugin {
-	private HashMap<String, File> plugins;
+	/**
+	 * Plugin names and their locations.
+	 */
+	private HashMap<String, File> updatablePlugins;
+	/**
+	 * All of the plugins on the server and their locations.
+	 */
+	private HashMap<String, File> serverPlugins;
+	/**
+	 * Files to move after bukkit has unloaded.
+	 * 
+	 * Key is the destination, value is the from-location.
+	 * 
+	 * TODO: is a map like this a good idea?
+	 */
+	private static HashMap<File, File> toMove;
+	
+	/**
+	 * Number of updatablePlugins updated.  Used to help ensure no conflicts occur.
+	 */
+	static int updatedCount = 0;
+	
+	static {
+		toMove = new HashMap<>();
+		
+		//Called when the JVM exits; override files.
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				System.out.println("[PluginUpdater] Starting plugin moving.");
+				
+				for (Map.Entry<File, File> e : toMove.entrySet()) {
+					try {
+						System.out.println("[PluginUpdater] Moved " +
+								e.getValue() + " to " + e.getKey() + ".");
+						
+						Files.move(e.getValue(), e.getKey());
+					} catch (Exception ex) {
+						System.err.println("[PluginUpdater] Failed to move " + 
+								e.getValue() + " to " + e.getKey() + "!");
+						ex.printStackTrace();
+					}
+				}
+			}
+		});
+	}
 	
 	@Override
 	public void onEnable() {
 		this.saveDefaultConfig();
 		
-		this.plugins = new HashMap<>();
+		this.updatablePlugins = new HashMap<>();
 		
 		ConfigurationSection section = this.getConfig()
 				.getConfigurationSection("updatables");
@@ -39,7 +85,7 @@ public class PluginUpdater extends JavaPlugin {
 							.getConfigurationSection(key);
 					
 					if (pluginSection.isString("path")) {
-						plugins.put(key, new File(pluginSection
+						updatablePlugins.put(key, new File(pluginSection
 								.getString("path")));
 					} else {
 						getPluginLoader().disablePlugin(this);
@@ -50,6 +96,28 @@ public class PluginUpdater extends JavaPlugin {
 					getPluginLoader().disablePlugin(this);
 					throw new RuntimeException("Config entry for plugin " + 
 							key + " is invalid!");
+				}
+			}
+		}
+		
+		if (serverPlugins == null) {
+			this.serverPlugins = new HashMap<>();
+			
+			File pluginsFolder = this.getDataFolder()
+					.getParentFile();
+			
+			for (File file : pluginsFolder.listFiles()) {
+				if (!file.isFile()) {
+					continue;
+				}
+				
+				try {
+					serverPlugins.put(getPluginLoader().getPluginDescription(
+							file.getAbsoluteFile()).getName(), 
+							file.getAbsoluteFile());
+				} catch (InvalidDescriptionException e) {
+					//Go on to the next file; this can occur normally.
+					continue;
 				}
 			}
 		}
@@ -95,13 +163,13 @@ public class PluginUpdater extends JavaPlugin {
 							pluginName + ".");
 					return true;
 				}
-				if (!plugins.containsKey(pluginName)) {
+				if (!updatablePlugins.containsKey(pluginName)) {
 					sender.sendMessage("§c" + pluginName + " is not in the " +
-							"list of updatable plugins!");
+							"list of updatable updatablePlugins!");
 					return true;
 				}
 				
-				File newPlugin = plugins.get(pluginName);
+				File newPlugin = updatablePlugins.get(pluginName);
 				if (!newPlugin.exists()) {
 					sender.sendMessage("§cNew plugin to copy could not be found!");
 					sender.sendMessage("§c(" + newPlugin.getAbsolutePath() + ")");
@@ -109,43 +177,16 @@ public class PluginUpdater extends JavaPlugin {
 				}
 				
 				pluginManager.disablePlugin(p);
+				File newPluginFile = new File(this.getDataFolder(), 
+						"updatetemp" + updatedCount + newPlugin.getName());
+				updatedCount++;
 				
-				File updateFolder = getServer().getUpdateFolderFile();
-				File pluginsFolder = updateFolder.getParentFile();
+				Files.copy(newPlugin, newPluginFile);
+				pluginManager.loadPlugin(newPluginFile);
 				
-				File pluginFile = null;
-				//Find the write plugin.
-				for (File file : pluginsFolder.listFiles()) {
-					if (!file.isFile()) {
-						continue;
-					}
-					
-					try {
-						if (getPluginLoader().getPluginDescription(
-								file.getAbsoluteFile()).getName()
-								.equals(pluginName)) {
-							pluginFile = file;
-							break;
-						}
-					} catch (InvalidDescriptionException e) {
-						//Go on to the next one.
-						continue;
-					}
-				}
-				
-				if (pluginFile==null) {
-					sender.sendMessage("§cFailed to find the requestied plugin " +
-							" in the plugins folder.");
-					return true;
-				}
-				
-				File newPluginTemp = new File(updateFolder, newPlugin.getName());
-				
-				Files.copy(newPlugin, newPluginTemp);
-				Files.move(pluginFile, new File(updateFolder, pluginFile.getName()+ ".old"));
-				Files.move(newPluginTemp, pluginFile);
-				
-				pluginManager.loadPlugin(pluginFile);
+				//Schedule moving the new plugin to the updatablePlugins folder.
+				toMove.put(serverPlugins.get(pluginName), newPluginFile);
+				serverPlugins.put(pluginName, newPluginFile);
 				
 				sender.sendMessage("§aDone!  Updated plugin " + pluginName + ".");
 				
@@ -164,7 +205,7 @@ public class PluginUpdater extends JavaPlugin {
 	public List<String> onTabComplete(CommandSender sender, Command command,
 			String alias, String[] args) {
 		if (command.getName().equals("updatePlugin")) {
-			return new ArrayList<String>(plugins.keySet());
+			return new ArrayList<String>(updatablePlugins.keySet());
 		}
 		
 		return null;
