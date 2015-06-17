@@ -1,0 +1,10 @@
+# PluginUpdater config.
+# 
+# An example plugin entry would be: 
+#
+# updatables:
+#   somePlugin: 
+#     path: |
+#       c:\plugins\somePlugin\target\somePlugin-v1.0.0-SNAPSHOT.jar
+#
+# Where 'somePlugin' is the name of the plugin (CASE-SENSITIVE!).
