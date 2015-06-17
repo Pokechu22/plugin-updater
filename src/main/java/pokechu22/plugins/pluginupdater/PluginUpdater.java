@@ -61,6 +61,8 @@ public class PluginUpdater extends JavaPlugin {
 						ex.printStackTrace();
 					}
 				}
+				
+				System.out.println("[PluginUpdater] Done!");
 			}
 		});
 	}
@@ -169,20 +171,21 @@ public class PluginUpdater extends JavaPlugin {
 					return true;
 				}
 				
-				File newPlugin = updatablePlugins.get(pluginName);
-				if (!newPlugin.exists()) {
+				File copyFrom = updatablePlugins.get(pluginName);
+				if (!copyFrom.exists()) {
 					sender.sendMessage("§cNew plugin to copy could not be found!");
-					sender.sendMessage("§c(" + newPlugin.getAbsolutePath() + ")");
+					sender.sendMessage("§c(" + copyFrom.getAbsolutePath() + ")");
 					return true;
 				}
 				
 				pluginManager.disablePlugin(p);
 				File newPluginFile = new File(this.getDataFolder(), 
-						"updatetemp" + updatedCount + newPlugin.getName());
+						"updatetemp" + updatedCount + copyFrom.getName());
 				updatedCount++;
 				
-				Files.copy(newPlugin, newPluginFile);
-				pluginManager.loadPlugin(newPluginFile);
+				Files.copy(copyFrom, newPluginFile);
+				Plugin newPlugin = pluginManager.loadPlugin(newPluginFile);
+				pluginManager.enablePlugin(newPlugin);
 				
 				//Schedule moving the new plugin to the updatablePlugins folder.
 				toMove.put(serverPlugins.get(pluginName), newPluginFile);
