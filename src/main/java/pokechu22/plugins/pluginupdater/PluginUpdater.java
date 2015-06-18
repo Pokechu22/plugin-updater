@@ -236,9 +236,39 @@ public class PluginUpdater extends JavaPlugin {
 	public List<String> onTabComplete(CommandSender sender, Command command,
 			String alias, String[] args) {
 		if (command.getName().equals("updatePlugin")) {
-			return new ArrayList<String>(updatablePlugins.keySet());
+			if (args.length == 0) {
+				ArrayList<String> returned = new ArrayList<>();
+				returned.add("all");
+				returned.addAll(updatablePlugins.keySet());
+				
+				return returned;
+			}
+			if (args.length == 1) {
+				ArrayList<String> returned = new ArrayList<>();
+				returned.add("all");
+				returned.addAll(updatablePlugins.keySet());
+				
+				return tabLimit(args[0], returned);
+			}
+			
+			return new ArrayList<String>();
 		}
 
 		return null;
+	}
+	
+	/**
+	 * Returns all values from options that begin with param.
+	 */
+	private List<String> tabLimit(String param, List<String> options) {
+		ArrayList<String> returned = new ArrayList<String>();
+		
+		for (String s : options) {
+			if (s.toLowerCase().startsWith(param.toLowerCase())) {
+				returned.add(s);
+			}
+		}
+		
+		return returned;
 	}
 }
