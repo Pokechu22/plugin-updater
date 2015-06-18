@@ -178,11 +178,13 @@ public class PluginUpdater extends JavaPlugin {
 	 * @param pluginName The name of the plugin to update.
 	 */
 	public void updatePlugin(CommandSender sender, String pluginName) {
+		Plugin oldPlugin = null;
+		
 		try {
 			PluginManager pluginManager = getServer().getPluginManager();
 
-			Plugin p = pluginManager.getPlugin(pluginName);
-			if (p == null) {
+			oldPlugin = pluginManager.getPlugin(pluginName);
+			if (oldPlugin == null) {
 				sender.sendMessage("§cThere is no plugin named " + 
 						pluginName + ".");
 				return;
@@ -200,7 +202,7 @@ public class PluginUpdater extends JavaPlugin {
 				return;
 			}
 
-			pluginManager.disablePlugin(p);
+			pluginManager.disablePlugin(oldPlugin);
 			File newPluginFile = new File(this.getDataFolder(), 
 					"updatetemp" + updatedCount + copyFrom.getName());
 			updatedCount++;
@@ -222,6 +224,11 @@ public class PluginUpdater extends JavaPlugin {
 					": " + e);
 			getLogger().log(Level.WARNING, "An error occured while updating " +
 					pluginName + " for " + sender + ".", e);
+			
+			//Re-enable any disabled plugins.
+			if (oldPlugin != null && !oldPlugin.isEnabled()) {
+				getServer().getPluginManager().enablePlugin(oldPlugin);
+			}
 		}
 	}
 
