@@ -24,9 +24,14 @@ public class PluginUpdater extends JavaPlugin {
 	 */
 	private HashMap<String, File> updatablePlugins;
 	/**
-	 * All of the plugins on the server and their locations.
+	 * All of the plugins currently loaded on the server and their locations.
 	 */
 	private HashMap<String, File> serverPlugins;
+	/**
+	 * All of the plugins originally on the server when the server loaded, and
+	 * their locations.
+	 */
+	private HashMap<String, File> initialServerPlugins;
 	/**
 	 * Files to move after bukkit has unloaded.
 	 * 
@@ -107,21 +112,23 @@ public class PluginUpdater extends JavaPlugin {
 			}
 		}
 
-		if (serverPlugins == null) {
+		if (this.serverPlugins == null) {
 			this.serverPlugins = new HashMap<>();
-
+			this.initialServerPlugins = new HashMap<>();
+			
 			File pluginsFolder = this.getDataFolder()
 					.getParentFile();
-
+	
 			for (File file : pluginsFolder.listFiles()) {
 				if (!file.isFile()) {
 					continue;
 				}
-
+	
 				try {
-					serverPlugins.put(getPluginLoader().getPluginDescription(
-							file.getAbsoluteFile()).getName(), 
-							file.getAbsoluteFile());
+					String name = getPluginLoader().getPluginDescription(
+							file.getAbsoluteFile()).getName();
+					serverPlugins.put(name, file.getAbsoluteFile());
+					initialServerPlugins.put(name, file.getAbsoluteFile());
 				} catch (InvalidDescriptionException e) {
 					//Go on to the next file; this can occur normally.
 					continue;
