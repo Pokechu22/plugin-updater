@@ -147,7 +147,7 @@ public class PluginUpdater extends JavaPlugin {
 				pluginNameTemp.append(args[i]);
 
 				if (i != args.length - 1) {
-					pluginNameTemp.append(' ');
+					pluginNameTemp.append('_');
 				}
 			}
 
