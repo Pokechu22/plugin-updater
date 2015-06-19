@@ -52,11 +52,11 @@ public class PluginUpdater extends JavaPlugin {
 
 				for (Map.Entry<File, File> e : toMove.entrySet()) {
 					try {
+						Files.move(e.getValue(), e.getKey());
+						
 						System.out.println("[PluginUpdater] Moved " +
 								e.getValue() + " to " + e.getKey() + 
-								"successfully.");
-
-						Files.move(e.getValue(), e.getKey());
+								" successfully.");
 					} catch (Exception ex) {
 						System.err.println("[PluginUpdater] Failed to move " + 
 								e.getValue() + " to " + e.getKey() + "!");
@@ -65,6 +65,9 @@ public class PluginUpdater extends JavaPlugin {
 				}
 
 				System.out.println("[PluginUpdater] Done!");
+				
+				System.out.flush();
+				System.err.flush();
 			}
 		});
 	}
